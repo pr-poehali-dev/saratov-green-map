@@ -108,7 +108,7 @@ const AddPlantDialog = ({ type, onAdd }: AddPlantDialogProps) => {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[10001]">
                 <SelectItem value="healthy">Здоровое</SelectItem>
                 <SelectItem value="satisfactory">Удовлетворительное</SelectItem>
                 <SelectItem value="unsatisfactory">Неудовлетворительное</SelectItem>
