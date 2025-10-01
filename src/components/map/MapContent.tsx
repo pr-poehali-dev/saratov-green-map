@@ -13,16 +13,11 @@ interface MapContentProps {
   onLawnPointAdd: (position: [number, number]) => void;
 }
 
-const MapContent = ({
-  plants,
-  lawns,
-  lawnPoints,
-  creationMode,
-  onPlantClick,
-  onLawnClick,
-  onPlantCreate,
-  onLawnPointAdd
-}: MapContentProps) => {
+const MapClickHandler = ({ creationMode, onPlantCreate, onLawnPointAdd }: { 
+  creationMode: CreationMode;
+  onPlantCreate: (position: [number, number]) => void;
+  onLawnPointAdd: (position: [number, number]) => void;
+}) => {
   useMapEvents({
     click: (e) => {
       const { lat, lng } = e.latlng;
@@ -33,12 +28,30 @@ const MapContent = ({
       }
     }
   });
+  return null;
+};
 
+const MapContent = ({
+  plants,
+  lawns,
+  lawnPoints,
+  creationMode,
+  onPlantClick,
+  onLawnClick,
+  onPlantCreate,
+  onLawnPointAdd
+}: MapContentProps) => {
   return (
     <>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      <MapClickHandler 
+        creationMode={creationMode}
+        onPlantCreate={onPlantCreate}
+        onLawnPointAdd={onLawnPointAdd}
       />
 
       {plants.map(plant => (
