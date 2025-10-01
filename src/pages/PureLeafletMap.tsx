@@ -128,42 +128,50 @@ const PureLeafletMap = () => {
     });
   }, [plants, lawns]);
 
-  const handleMapClick = (e: L.LeafletMouseEvent) => {
-    if (addingPlantType && tempPlantData) {
-      const newPlant: PlantData = {
-        id: Date.now().toString(),
-        type: addingPlantType,
-        position: [e.latlng.lat, e.latlng.lng],
-        ...tempPlantData
-      };
-      
-      setPlants([...plants, newPlant]);
-      setAddingPlantType(null);
-      setTempPlantData(null);
-      toast({ title: 'Растение добавлено на карту' });
-    }
-
-    if (addingLawn && tempLawnData) {
-      setLawnPoints([...lawnPoints, [e.latlng.lat, e.latlng.lng]]);
-      
-      if (lawnPoints.length >= 2) {
-        const newLawn: LawnData = {
-          id: Date.now().toString(),
-          positions: [...lawnPoints, [e.latlng.lat, e.latlng.lng]],
-          ...tempLawnData
-        };
-        
-        setLawns([...lawns, newLawn]);
-        setAddingLawn(false);
-        setLawnPoints([]);
-        setTempLawnData(null);
-        toast({ title: 'Газон добавлен на карту' });
-      }
-    }
-  };
-
   useEffect(() => {
     if (!mapInstanceRef.current) return;
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      if (addingPlantType && tempPlantData) {
+        const newPlant: PlantData = {
+          id: Date.now().toString(),
+          type: addingPlantType,
+          position: [e.latlng.lat, e.latlng.lng],
+          ...tempPlantData
+        };
+        
+        setPlants(prev => [...prev, newPlant]);
+        setAddingPlantType(null);
+        setTempPlantData(null);
+        toast({ title: 'Растение добавлено на карту' });
+        return;
+      }
+
+      if (addingLawn && tempLawnData) {
+        const newPoint: [number, number] = [e.latlng.lat, e.latlng.lng];
+        
+        setLawnPoints(prev => {
+          const updated = [...prev, newPoint];
+          
+          if (updated.length >= 3) {
+            const newLawn: LawnData = {
+              id: Date.now().toString(),
+              positions: updated,
+              ...tempLawnData
+            };
+            
+            setLawns(prevLawns => [...prevLawns, newLawn]);
+            setAddingLawn(false);
+            setLawnPoints([]);
+            setTempLawnData(null);
+            toast({ title: 'Газон добавлен на карту' });
+            return [];
+          }
+          
+          return updated;
+        });
+      }
+    };
 
     if (addingPlantType || addingLawn) {
       mapInstanceRef.current.on('click', handleMapClick);
@@ -176,7 +184,7 @@ const PureLeafletMap = () => {
         mapInstanceRef.current.off('click', handleMapClick);
       }
     };
-  }, [addingPlantType, addingLawn, tempPlantData, tempLawnData, lawnPoints, plants, lawns]);
+  }, [addingPlantType, addingLawn, tempPlantData, tempLawnData, toast]);
 
   useEffect(() => {
     (window as any).deletePlant = (id: string) => {
