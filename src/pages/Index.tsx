@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import { MapContainer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { useNavigate } from 'react-router-dom';
 import { PlantData, LawnData, CreationMode, initialPlants, initialLawns } from '@/components/map/types';
-import { getHealthColor, createPlantIcon } from '@/components/map/utils';
-import MapClickHandler from '@/components/map/MapClickHandler';
+import MapContent from '@/components/map/MapContent';
 import MapControls from '@/components/map/MapControls';
 import PlantDialog from '@/components/map/PlantDialog';
 import LawnDialog from '@/components/map/LawnDialog';
@@ -223,69 +222,13 @@ const Index = () => {
         style={{ height: '100vh', width: '100vw' }}
         className="z-0"
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {plants.map(plant => (
-          <Marker 
-            key={plant.id}
-            position={plant.position}
-            icon={createPlantIcon(plant.type, plant.healthStatus)}
-            eventHandlers={{
-              click: () => handlePlantClick(plant)
-            }}
-          >
-            <Popup>
-              <div className="font-roboto">
-                <strong>{plant.species}</strong>
-                <br />
-                Возраст: {plant.age} лет
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        {lawns.map(lawn => (
-          <Polygon
-            key={lawn.id}
-            positions={lawn.positions}
-            pathOptions={{
-              color: getHealthColor(lawn.healthStatus),
-              fillColor: getHealthColor(lawn.healthStatus),
-              fillOpacity: 0.3,
-              weight: 3
-            }}
-            eventHandlers={{
-              click: () => handleLawnClick(lawn)
-            }}
-          >
-            <Popup>
-              <div className="font-roboto">
-                <strong>Газон</strong>
-                <br />
-                Площадь: {lawn.area} м²
-              </div>
-            </Popup>
-          </Polygon>
-        ))}
-
-        {lawnPoints.length > 0 && (
-          <Polygon
-            positions={lawnPoints}
-            pathOptions={{
-              color: '#2D5016',
-              fillColor: '#beee90',
-              fillOpacity: 0.4,
-              weight: 2,
-              dashArray: '10, 10'
-            }}
-          />
-        )}
-
-        <MapClickHandler 
-          mode={creationMode} 
+        <MapContent
+          plants={plants}
+          lawns={lawns}
+          lawnPoints={lawnPoints}
+          creationMode={creationMode}
+          onPlantClick={handlePlantClick}
+          onLawnClick={handleLawnClick}
           onPlantCreate={handleCreatePlant}
           onLawnPointAdd={handleAddLawnPoint}
         />
