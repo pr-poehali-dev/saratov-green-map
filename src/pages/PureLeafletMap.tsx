@@ -160,7 +160,7 @@ const PureLeafletMap = () => {
           const updated = [...prev, newPoint];
           console.log('Lawn points:', updated.length);
           
-          if (updated.length >= 3) {
+          if (updated.length >= 4) {
             const newLawn: LawnData = {
               id: Date.now().toString(),
               positions: updated,
@@ -272,7 +272,7 @@ const PureLeafletMap = () => {
                 setTempLawnData(data);
                 setAddingLawn(true);
                 setLawnPoints([]);
-                toast({ title: 'Кликните на карту 3+ раз для создания полигона газона' });
+                toast({ title: 'Кликните на карту 4 раза для создания полигона газона' });
               }} 
             />
             
@@ -296,7 +296,7 @@ const PureLeafletMap = () => {
             
             {addingLawn && lawnPoints.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                Точек: {lawnPoints.length}. Минимум 3 для завершения.
+                Точек: {lawnPoints.length}. Необходимо 4 для завершения.
               </p>
             )}
           </CardContent>
