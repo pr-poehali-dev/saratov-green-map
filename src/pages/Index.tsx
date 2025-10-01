@@ -286,6 +286,38 @@ const Index = () => {
     });
   };
 
+  const handleDeletePlant = () => {
+    if (!selectedPlant) return;
+
+    const updatedPlants = plants.filter(p => p.id !== selectedPlant.id);
+    setPlants(updatedPlants);
+    localStorage.setItem('saratov-plants', JSON.stringify(updatedPlants));
+
+    toast({
+      title: "Объект удалён",
+      description: "Растение удалено с карты"
+    });
+
+    setIsDialogOpen(false);
+    setSelectedPlant(null);
+  };
+
+  const handleDeleteLawn = () => {
+    if (!selectedLawn) return;
+
+    const updatedLawns = lawns.filter(l => l.id !== selectedLawn.id);
+    setLawns(updatedLawns);
+    localStorage.setItem('saratov-lawns', JSON.stringify(updatedLawns));
+
+    toast({
+      title: "Объект удалён",
+      description: "Газон удалён с карты"
+    });
+
+    setIsDialogOpen(false);
+    setSelectedLawn(null);
+  };
+
   return (
     <div className="relative w-screen h-screen">
       <div className="absolute top-6 left-6 z-[1000] bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-primary/20">
@@ -534,6 +566,17 @@ const Index = () => {
                   Закрыть
                 </Button>
               </div>
+              
+              <div className="pt-2 border-t">
+                <Button 
+                  onClick={handleDeletePlant} 
+                  variant="destructive" 
+                  className="w-full flex items-center gap-2"
+                >
+                  <Icon name="Trash2" size={16} />
+                  Удалить объект
+                </Button>
+              </div>
             </div>
           )}
 
@@ -583,6 +626,17 @@ const Index = () => {
                 </Button>
                 <Button onClick={() => setIsDialogOpen(false)} variant="outline" className="flex-1">
                   Закрыть
+                </Button>
+              </div>
+
+              <div className="pt-2 border-t">
+                <Button 
+                  onClick={handleDeleteLawn} 
+                  variant="destructive" 
+                  className="w-full flex items-center gap-2"
+                >
+                  <Icon name="Trash2" size={16} />
+                  Удалить газон
                 </Button>
               </div>
             </div>
