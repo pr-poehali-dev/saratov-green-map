@@ -8,7 +8,8 @@ Returns: HTTP response dict with statusCode, headers, body
 import json
 import os
 from typing import Dict, Any, List, Optional
-import psycopg
+import psycopg2
+import psycopg2.extras
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -34,7 +35,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     try:
-        conn = psycopg.connect(dsn, autocommit=True)
+        conn = psycopg2.connect(dsn)
+        conn.autocommit = True
         cursor = conn.cursor()
         
         if method == 'GET':
