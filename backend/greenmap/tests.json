@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get all plants",
+      "method": "GET",
+      "path": "/?type=plants",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "plants": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get all lawns",
+      "method": "GET",
+      "path": "/?type=lawns",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "lawns": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

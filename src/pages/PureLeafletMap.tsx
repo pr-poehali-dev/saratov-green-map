@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import AddPlantDialog from '@/components/AddPlantDialog';
 import AddLawnDialog from '@/components/AddLawnDialog';
+import { api } from '@/lib/api';
 
 interface PlantData {
   id: string;
@@ -45,17 +46,22 @@ const PureLeafletMap = () => {
   const [tempPlantData, setTempPlantData] = useState<any>(null);
 
   useEffect(() => {
-    const storedPlants = localStorage.getItem('saratov-plants');
-    const storedLawns = localStorage.getItem('saratov-lawns');
+    const loadData = async () => {
+      try {
+        const [plantsData, lawnsData] = await Promise.all([
+          api.getPlants(),
+          api.getLawns()
+        ]);
+        setPlants(plantsData);
+        setLawns(lawnsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({ title: 'Ошибка загрузки данных', variant: 'destructive' });
+      }
+    };
     
-    if (storedPlants) {
-      setPlants(JSON.parse(storedPlants));
-    }
-
-    if (storedLawns) {
-      setLawns(JSON.parse(storedLawns));
-    }
-  }, []);
+    loadData();
+  }, [toast]);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -75,10 +81,7 @@ const PureLeafletMap = () => {
     };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('saratov-plants', JSON.stringify(plants));
-    localStorage.setItem('saratov-lawns', JSON.stringify(lawns));
-  }, [plants, lawns]);
+
 
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current) return;
@@ -143,13 +146,15 @@ const PureLeafletMap = () => {
           ...tempPlantData
         };
         
-        setPlants(prev => {
-          console.log('Previous plants:', prev.length, 'New plant:', newPlant);
-          return [...prev, newPlant];
+        api.createPlant(newPlant).then(() => {
+          setPlants(prev => [...prev, newPlant]);
+          setAddingPlantType(null);
+          setTempPlantData(null);
+          toast({ title: 'Растение добавлено на карту' });
+        }).catch(error => {
+          console.error('Error creating plant:', error);
+          toast({ title: 'Ошибка при добавлении растения', variant: 'destructive' });
         });
-        setAddingPlantType(null);
-        setTempPlantData(null);
-        toast({ title: 'Растение добавлено на карту' });
         return;
       }
 
@@ -167,11 +172,17 @@ const PureLeafletMap = () => {
               ...tempLawnData
             };
             
-            setLawns(prevLawns => [...prevLawns, newLawn]);
+            api.createLawn(newLawn).then(() => {
+              setLawns(prevLawns => [...prevLawns, newLawn]);
+              toast({ title: 'Газон добавлен на карту' });
+            }).catch(error => {
+              console.error('Error creating lawn:', error);
+              toast({ title: 'Ошибка при добавлении газона', variant: 'destructive' });
+            });
+            
             setAddingLawn(false);
             setLawnPoints([]);
             setTempLawnData(null);
-            toast({ title: 'Газон добавлен на карту' });
             return [];
           }
           
@@ -199,13 +210,23 @@ const PureLeafletMap = () => {
 
   useEffect(() => {
     (window as any).deletePlant = (id: string) => {
-      setPlants(plants.filter(p => p.id !== id));
-      toast({ title: 'Растение удалено' });
+      api.deletePlant(id).then(() => {
+        setPlants(plants.filter(p => p.id !== id));
+        toast({ title: 'Растение удалено' });
+      }).catch(error => {
+        console.error('Error deleting plant:', error);
+        toast({ title: 'Ошибка при удалении растения', variant: 'destructive' });
+      });
     };
 
     (window as any).deleteLawn = (id: string) => {
-      setLawns(lawns.filter(l => l.id !== id));
-      toast({ title: 'Газон удалён' });
+      api.deleteLawn(id).then(() => {
+        setLawns(lawns.filter(l => l.id !== id));
+        toast({ title: 'Газон удалён' });
+      }).catch(error => {
+        console.error('Error deleting lawn:', error);
+        toast({ title: 'Ошибка при удалении газона', variant: 'destructive' });
+      });
     };
   }, [plants, lawns, toast]);
 
