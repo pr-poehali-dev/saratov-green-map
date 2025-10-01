@@ -11,20 +11,32 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
-const treeIcon = L.divIcon({
-  html: '<div style="font-size: 32px;">🌳</div>',
-  className: 'custom-marker',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32]
-});
+const getHealthColor = (status: 'healthy' | 'satisfactory' | 'unsatisfactory') => {
+  switch (status) {
+    case 'healthy': return '#22c55e';
+    case 'satisfactory': return '#eab308';
+    case 'unsatisfactory': return '#ef4444';
+    default: return '#22c55e';
+  }
+};
 
-const bushIcon = L.divIcon({
-  html: '<div style="font-size: 28px;">🌿</div>',
-  className: 'custom-marker',
-  iconSize: [28, 28],
-  iconAnchor: [14, 28]
-});
+const createPlantIcon = (type: 'tree' | 'bush', healthStatus: 'healthy' | 'satisfactory' | 'unsatisfactory') => {
+  const emoji = type === 'tree' ? '🌳' : '🌿';
+  const color = getHealthColor(healthStatus);
+  const size = type === 'tree' ? 32 : 28;
+  
+  return L.divIcon({
+    html: `<div style="position: relative;">
+      <div style="font-size: ${size}px;">${emoji}</div>
+      <div style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; background-color: ${color}; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+    </div>`,
+    className: 'custom-marker',
+    iconSize: [size, size + 12],
+    iconAnchor: [size / 2, size + 12]
+  });
+};
 
 interface PlantData {
   id: string;
@@ -143,6 +155,7 @@ const Index = () => {
   const [lawnPoints, setLawnPoints] = useState<[number, number][]>([]);
   const [newPlantType, setNewPlantType] = useState<'tree' | 'bush'>('tree');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedPlants = localStorage.getItem('saratov-plants');
@@ -345,6 +358,14 @@ const Index = () => {
               <Icon name="Square" size={18} />
               Добавить газон
             </Button>
+            <Button 
+              onClick={() => navigate('/table')} 
+              className="w-full flex items-center gap-2"
+              variant="outline"
+            >
+              <Icon name="Table" size={18} />
+              Таблица объектов
+            </Button>
           </>
         ) : creationMode === 'plant' ? (
           <div className="space-y-3">
@@ -420,7 +441,7 @@ const Index = () => {
           <Marker 
             key={plant.id}
             position={plant.position}
-            icon={plant.type === 'tree' ? treeIcon : bushIcon}
+            icon={createPlantIcon(plant.type, plant.healthStatus)}
             eventHandlers={{
               click: () => handlePlantClick(plant)
             }}
@@ -440,10 +461,10 @@ const Index = () => {
             key={lawn.id}
             positions={lawn.positions}
             pathOptions={{
-              color: '#8B7355',
-              fillColor: '#beee90',
-              fillOpacity: 0.6,
-              weight: 2
+              color: getHealthColor(lawn.healthStatus),
+              fillColor: getHealthColor(lawn.healthStatus),
+              fillOpacity: 0.3,
+              weight: 3
             }}
             eventHandlers={{
               click: () => handleLawnClick(lawn)
