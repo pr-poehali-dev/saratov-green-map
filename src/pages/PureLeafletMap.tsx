@@ -132,7 +132,10 @@ const PureLeafletMap = () => {
     if (!mapInstanceRef.current) return;
 
     const handleMapClick = (e: L.LeafletMouseEvent) => {
+      console.log('Map clicked!', { addingPlantType, tempPlantData, addingLawn, tempLawnData });
+      
       if (addingPlantType && tempPlantData) {
+        console.log('Adding plant at:', e.latlng);
         const newPlant: PlantData = {
           id: Date.now().toString(),
           type: addingPlantType,
@@ -140,7 +143,10 @@ const PureLeafletMap = () => {
           ...tempPlantData
         };
         
-        setPlants(prev => [...prev, newPlant]);
+        setPlants(prev => {
+          console.log('Previous plants:', prev.length, 'New plant:', newPlant);
+          return [...prev, newPlant];
+        });
         setAddingPlantType(null);
         setTempPlantData(null);
         toast({ title: 'Растение добавлено на карту' });
@@ -152,6 +158,7 @@ const PureLeafletMap = () => {
         
         setLawnPoints(prev => {
           const updated = [...prev, newPoint];
+          console.log('Lawn points:', updated.length);
           
           if (updated.length >= 3) {
             const newLawn: LawnData = {
@@ -173,10 +180,14 @@ const PureLeafletMap = () => {
       }
     };
 
+    console.log('Setting up map click handler. addingPlantType:', addingPlantType, 'addingLawn:', addingLawn);
+    
     if (addingPlantType || addingLawn) {
       mapInstanceRef.current.on('click', handleMapClick);
+      console.log('Map click handler attached');
     } else {
       mapInstanceRef.current.off('click', handleMapClick);
+      console.log('Map click handler removed');
     }
 
     return () => {
@@ -241,8 +252,10 @@ const PureLeafletMap = () => {
             <AddPlantDialog 
               type="tree" 
               onAdd={(data) => {
+                console.log('PureLeafletMap: onAdd called with data:', data);
                 setTempPlantData(data);
                 setAddingPlantType('tree');
+                console.log('State updated: addingPlantType=tree, tempPlantData=', data);
                 toast({ title: 'Кликните на карту для размещения дерева' });
               }} 
             />

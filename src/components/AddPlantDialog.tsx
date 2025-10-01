@@ -28,7 +28,19 @@ const AddPlantDialog = ({ type, onAdd }: AddPlantDialogProps) => {
   const [healthStatus, setHealthStatus] = useState<'healthy' | 'satisfactory' | 'unsatisfactory'>('healthy');
 
   const handleSubmit = () => {
-    if (!species || !age || !height || !crownDiameter) return;
+    if (!species || !age || !height || !crownDiameter) {
+      console.log('Validation failed:', { species, age, height, crownDiameter });
+      return;
+    }
+
+    console.log('AddPlantDialog: calling onAdd with data:', {
+      species,
+      age: Number(age),
+      height: Number(height),
+      crownDiameter: Number(crownDiameter),
+      damages,
+      healthStatus
+    });
 
     onAdd({
       species,
