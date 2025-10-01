@@ -1,7 +1,6 @@
-import { TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import { TileLayer, Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import { PlantData, LawnData, CreationMode } from './types';
 import { getHealthColor, createPlantIcon } from './utils';
-import MapClickHandler from './MapClickHandler';
 
 interface MapContentProps {
   plants: PlantData[];
@@ -24,6 +23,17 @@ const MapContent = ({
   onPlantCreate,
   onLawnPointAdd
 }: MapContentProps) => {
+  useMapEvents({
+    click: (e) => {
+      const { lat, lng } = e.latlng;
+      if (creationMode === 'plant') {
+        onPlantCreate([lat, lng]);
+      } else if (creationMode === 'lawn') {
+        onLawnPointAdd([lat, lng]);
+      }
+    }
+  });
+
   return (
     <>
       <TileLayer
@@ -86,12 +96,6 @@ const MapContent = ({
           }}
         />
       )}
-
-      <MapClickHandler 
-        mode={creationMode} 
-        onPlantCreate={onPlantCreate}
-        onLawnPointAdd={onLawnPointAdd}
-      />
     </>
   );
 };
