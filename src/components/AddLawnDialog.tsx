@@ -43,11 +43,11 @@ const AddLawnDialog = ({ onAdd }: AddLawnDialogProps) => {
           Добавить газон
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="z-[10000]">
         <DialogHeader>
           <DialogTitle>Добавить газон</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4">
           <div>
             <Label>Тип травы</Label>
             <Input value={grassType} onChange={(e) => setGrassType(e.target.value)} placeholder="Например: Мятлик луговой" />

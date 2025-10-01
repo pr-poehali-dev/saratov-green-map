@@ -75,11 +75,11 @@ const AddPlantDialog = ({ type, onAdd }: AddPlantDialogProps) => {
           Добавить {type === 'tree' ? 'дерево' : 'кустарник'}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="z-[10000]">
         <DialogHeader>
           <DialogTitle>Добавить {type === 'tree' ? 'дерево' : 'кустарник'}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4">
           <div>
             <Label>Вид растения</Label>
             <Input value={species} onChange={(e) => setSpecies(e.target.value)} placeholder="Например: Дуб обыкновенный" />
