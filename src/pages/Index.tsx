@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+import { Badge } from '@/components/ui/badge';
 
 const treeIcon = L.divIcon({
   html: '<div style="font-size: 32px;">🌳</div>',
@@ -108,12 +109,39 @@ const initialLawns: LawnData[] = [
   }
 ];
 
+type CreationMode = 'plant' | 'lawn' | null;
+
+const MapClickHandler = ({ 
+  mode, 
+  onPlantCreate, 
+  onLawnPointAdd 
+}: { 
+  mode: CreationMode;
+  onPlantCreate: (position: [number, number]) => void;
+  onLawnPointAdd: (position: [number, number]) => void;
+}) => {
+  useMapEvents({
+    click: (e) => {
+      const { lat, lng } = e.latlng;
+      if (mode === 'plant') {
+        onPlantCreate([lat, lng]);
+      } else if (mode === 'lawn') {
+        onLawnPointAdd([lat, lng]);
+      }
+    }
+  });
+  return null;
+};
+
 const Index = () => {
   const [plants, setPlants] = useState<PlantData[]>([]);
   const [lawns, setLawns] = useState<LawnData[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<PlantData | null>(null);
   const [selectedLawn, setSelectedLawn] = useState<LawnData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [creationMode, setCreationMode] = useState<CreationMode>(null);
+  const [lawnPoints, setLawnPoints] = useState<[number, number][]>([]);
+  const [newPlantType, setNewPlantType] = useState<'tree' | 'bush'>('tree');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -181,6 +209,83 @@ const Index = () => {
     setIsDialogOpen(false);
   };
 
+  const handleCreatePlant = (position: [number, number]) => {
+    const newPlant: PlantData = {
+      id: Date.now().toString(),
+      type: newPlantType,
+      species: newPlantType === 'tree' ? 'Новое дерево' : 'Новый кустарник',
+      age: 0,
+      crownDiameter: 0,
+      height: 0,
+      damages: '',
+      healthStatus: 'healthy',
+      position
+    };
+    
+    const updatedPlants = [...plants, newPlant];
+    setPlants(updatedPlants);
+    localStorage.setItem('saratov-plants', JSON.stringify(updatedPlants));
+    
+    toast({
+      title: "Объект создан",
+      description: `${newPlantType === 'tree' ? 'Дерево' : 'Кустарник'} добавлено на карту`
+    });
+    
+    setCreationMode(null);
+    setSelectedPlant(newPlant);
+    setIsDialogOpen(true);
+  };
+
+  const handleAddLawnPoint = (position: [number, number]) => {
+    setLawnPoints([...lawnPoints, position]);
+    toast({
+      title: "Точка добавлена",
+      description: `Точек в полигоне: ${lawnPoints.length + 1}`
+    });
+  };
+
+  const handleCompleteLawn = () => {
+    if (lawnPoints.length < 3) {
+      toast({
+        title: "Недостаточно точек",
+        description: "Для создания газона нужно минимум 3 точки",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newLawn: LawnData = {
+      id: Date.now().toString(),
+      area: 0,
+      grassType: 'Новый газон',
+      healthStatus: 'healthy',
+      positions: lawnPoints
+    };
+
+    const updatedLawns = [...lawns, newLawn];
+    setLawns(updatedLawns);
+    localStorage.setItem('saratov-lawns', JSON.stringify(updatedLawns));
+
+    toast({
+      title: "Газон создан",
+      description: "Газон добавлен на карту"
+    });
+
+    setLawnPoints([]);
+    setCreationMode(null);
+    setSelectedLawn(newLawn);
+    setIsDialogOpen(true);
+  };
+
+  const handleCancelCreation = () => {
+    setCreationMode(null);
+    setLawnPoints([]);
+    toast({
+      title: "Отменено",
+      description: "Создание объекта отменено"
+    });
+  };
+
   return (
     <div className="relative w-screen h-screen">
       <div className="absolute top-6 left-6 z-[1000] bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-primary/20">
@@ -188,6 +293,84 @@ const Index = () => {
           <Icon name="Trees" size={28} className="text-primary" />
           Карта зелёных насаждений Саратова
         </h1>
+      </div>
+
+      <div className="absolute top-6 right-6 z-[1000] bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-primary/20 space-y-3">
+        {!creationMode ? (
+          <>
+            <Button 
+              onClick={() => setCreationMode('plant')} 
+              className="w-full flex items-center gap-2"
+            >
+              <Icon name="Trees" size={18} />
+              Добавить растение
+            </Button>
+            <Button 
+              onClick={() => setCreationMode('lawn')} 
+              className="w-full flex items-center gap-2"
+              variant="secondary"
+            >
+              <Icon name="Square" size={18} />
+              Добавить газон
+            </Button>
+          </>
+        ) : creationMode === 'plant' ? (
+          <div className="space-y-3">
+            <Badge className="w-full justify-center py-2">
+              <Icon name="MapPin" size={16} className="mr-2" />
+              Кликните на карте
+            </Badge>
+            <div className="flex gap-2">
+              <Button 
+                size="sm"
+                variant={newPlantType === 'tree' ? 'default' : 'outline'}
+                onClick={() => setNewPlantType('tree')}
+                className="flex-1"
+              >
+                🌳
+              </Button>
+              <Button 
+                size="sm"
+                variant={newPlantType === 'bush' ? 'default' : 'outline'}
+                onClick={() => setNewPlantType('bush')}
+                className="flex-1"
+              >
+                🌿
+              </Button>
+            </div>
+            <Button 
+              onClick={handleCancelCreation} 
+              variant="destructive" 
+              size="sm" 
+              className="w-full"
+            >
+              Отмена
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Badge className="w-full justify-center py-2">
+              <Icon name="MapPin" size={16} className="mr-2" />
+              Точек: {lawnPoints.length}
+            </Badge>
+            <Button 
+              onClick={handleCompleteLawn} 
+              disabled={lawnPoints.length < 3}
+              size="sm" 
+              className="w-full"
+            >
+              Завершить
+            </Button>
+            <Button 
+              onClick={handleCancelCreation} 
+              variant="destructive" 
+              size="sm" 
+              className="w-full"
+            >
+              Отмена
+            </Button>
+          </div>
+        )}
       </div>
 
       <MapContainer 
@@ -243,6 +426,25 @@ const Index = () => {
             </Popup>
           </Polygon>
         ))}
+
+        {lawnPoints.length > 0 && (
+          <Polygon
+            positions={lawnPoints}
+            pathOptions={{
+              color: '#2D5016',
+              fillColor: '#beee90',
+              fillOpacity: 0.4,
+              weight: 2,
+              dashArray: '10, 10'
+            }}
+          />
+        )}
+
+        <MapClickHandler 
+          mode={creationMode} 
+          onPlantCreate={handleCreatePlant}
+          onLawnPointAdd={handleAddLawnPoint}
+        />
       </MapContainer>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
