@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
+import { api } from '@/lib/api';
 
 interface PlantData {
   id: string;
@@ -51,16 +52,20 @@ const TablePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedPlants = localStorage.getItem('saratov-plants');
-    const storedLawns = localStorage.getItem('saratov-lawns');
-    
-    if (storedPlants) {
-      setPlants(JSON.parse(storedPlants));
-    }
+    const loadData = async () => {
+      try {
+        const [plantsData, lawnsData] = await Promise.all([
+          api.getPlants(),
+          api.getLawns()
+        ]);
+        setPlants(plantsData);
+        setLawns(lawnsData);
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+      }
+    };
 
-    if (storedLawns) {
-      setLawns(JSON.parse(storedLawns));
-    }
+    loadData();
   }, []);
 
   const healthyPlants = plants.filter(p => p.healthStatus === 'healthy').length;
