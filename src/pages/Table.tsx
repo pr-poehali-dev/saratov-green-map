@@ -18,6 +18,7 @@ interface PlantData {
   damages: string;
   healthStatus: 'healthy' | 'satisfactory' | 'unsatisfactory';
   position: [number, number];
+  address?: string;
 }
 
 interface LawnData {
@@ -49,6 +50,7 @@ const getHealthStatusVariant = (status: 'healthy' | 'satisfactory' | 'unsatisfac
 const TablePage = () => {
   const [plants, setPlants] = useState<PlantData[]>([]);
   const [lawns, setLawns] = useState<LawnData[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,6 +62,8 @@ const TablePage = () => {
         ]);
         setPlants(plantsData);
         setLawns(lawnsData);
+        
+        loadAddresses(plantsData);
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
       }
@@ -67,6 +71,32 @@ const TablePage = () => {
 
     loadData();
   }, []);
+
+  const loadAddresses = async (plantsData: PlantData[]) => {
+    setLoadingAddresses(true);
+    const plantsWithAddresses = await Promise.all(
+      plantsData.map(async (plant) => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${plant.position[0]}&lon=${plant.position[1]}&accept-language=ru`
+          );
+          const data = await response.json();
+          return {
+            ...plant,
+            address: data.display_name || 'Адрес не найден'
+          };
+        } catch (error) {
+          console.error('Ошибка геокодирования:', error);
+          return {
+            ...plant,
+            address: 'Ошибка загрузки адреса'
+          };
+        }
+      })
+    );
+    setPlants(plantsWithAddresses);
+    setLoadingAddresses(false);
+  };
 
   const healthyPlants = plants.filter(p => p.healthStatus === 'healthy').length;
   const satisfactoryPlants = plants.filter(p => p.healthStatus === 'satisfactory').length;
@@ -155,6 +185,7 @@ const TablePage = () => {
                       <TableRow>
                         <TableHead className="w-[50px]">Тип</TableHead>
                         <TableHead>Вид растения</TableHead>
+                        <TableHead>Адрес</TableHead>
                         <TableHead>Возраст</TableHead>
                         <TableHead>Высота</TableHead>
                         <TableHead>Диаметр кроны</TableHead>
@@ -165,7 +196,7 @@ const TablePage = () => {
                     <TableBody>
                       {plants.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                             Нет данных о растениях
                           </TableCell>
                         </TableRow>
@@ -176,6 +207,13 @@ const TablePage = () => {
                               {plant.type === 'tree' ? '🌳' : '🌿'}
                             </TableCell>
                             <TableCell className="font-medium">{plant.species}</TableCell>
+                            <TableCell className="max-w-[300px]">
+                              {loadingAddresses ? (
+                                <span className="text-muted-foreground text-sm">Загрузка...</span>
+                              ) : (
+                                <span className="text-sm">{plant.address || '—'}</span>
+                              )}
+                            </TableCell>
                             <TableCell>{plant.age} лет</TableCell>
                             <TableCell>{plant.height} м</TableCell>
                             <TableCell>{plant.crownDiameter} м</TableCell>
