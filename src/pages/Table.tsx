@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { api } from '@/lib/api';
 
@@ -51,6 +53,10 @@ const TablePage = () => {
   const [plants, setPlants] = useState<PlantData[]>([]);
   const [lawns, setLawns] = useState<LawnData[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'tree' | 'bush'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'satisfactory' | 'unsatisfactory'>('all');
+  const [lawnStatusFilter, setLawnStatusFilter] = useState<'all' | 'healthy' | 'satisfactory' | 'unsatisfactory'>('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,6 +103,24 @@ const TablePage = () => {
     setPlants(plantsWithAddresses);
     setLoadingAddresses(false);
   };
+
+  const filteredPlants = useMemo(() => {
+    return plants.filter(plant => {
+      const matchesSearch = 
+        plant.species.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (plant.address && plant.address.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesType = typeFilter === 'all' || plant.type === typeFilter;
+      const matchesStatus = statusFilter === 'all' || plant.healthStatus === statusFilter;
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [plants, searchQuery, typeFilter, statusFilter]);
+
+  const filteredLawns = useMemo(() => {
+    return lawns.filter(lawn => {
+      const matchesStatus = lawnStatusFilter === 'all' || lawn.healthStatus === lawnStatusFilter;
+      return matchesStatus;
+    });
+  }, [lawns, lawnStatusFilter]);
 
   const healthyPlants = plants.filter(p => p.healthStatus === 'healthy').length;
   const satisfactoryPlants = plants.filter(p => p.healthStatus === 'satisfactory').length;
@@ -165,11 +189,11 @@ const TablePage = () => {
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="plants" className="flex items-center gap-2">
               <Icon name="Trees" size={16} />
-              Растения ({plants.length})
+              Растения ({filteredPlants.length}/{plants.length})
             </TabsTrigger>
             <TabsTrigger value="lawns" className="flex items-center gap-2">
               <Icon name="Square" size={16} />
-              Газоны ({lawns.length})
+              Газоны ({filteredLawns.length}/{lawns.length})
             </TabsTrigger>
           </TabsList>
 
@@ -179,6 +203,51 @@ const TablePage = () => {
                 <CardTitle>Деревья и кустарники</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Поиск по виду или адресу..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                      <SelectValue placeholder="Тип растения" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все типы</SelectItem>
+                      <SelectItem value="tree">Деревья</SelectItem>
+                      <SelectItem value="bush">Кустарники</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                      <SelectValue placeholder="Состояние" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все состояния</SelectItem>
+                      <SelectItem value="healthy">Здоровое</SelectItem>
+                      <SelectItem value="satisfactory">Удовлетворительное</SelectItem>
+                      <SelectItem value="unsatisfactory">Неудовлетворительное</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all') && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => {
+                        setSearchQuery('');
+                        setTypeFilter('all');
+                        setStatusFilter('all');
+                      }}
+                      className="whitespace-nowrap"
+                    >
+                      <Icon name="X" size={16} className="mr-2" />
+                      Сбросить
+                    </Button>
+                  )}
+                </div>
                 <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -194,14 +263,14 @@ const TablePage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {plants.length === 0 ? (
+                      {filteredPlants.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                            Нет данных о растениях
+                            {plants.length === 0 ? 'Нет данных о растениях' : 'Растения не найдены'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        plants.map((plant) => (
+                        filteredPlants.map((plant) => (
                           <TableRow key={plant.id}>
                             <TableCell className="text-2xl">
                               {plant.type === 'tree' ? '🌳' : '🌿'}
@@ -239,6 +308,28 @@ const TablePage = () => {
                 <CardTitle>Газоны</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="flex gap-4 mb-6">
+                  <Select value={lawnStatusFilter} onValueChange={(value) => setLawnStatusFilter(value as any)}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                      <SelectValue placeholder="Состояние" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Все состояния</SelectItem>
+                      <SelectItem value="healthy">Здоровое</SelectItem>
+                      <SelectItem value="satisfactory">Удовлетворительное</SelectItem>
+                      <SelectItem value="unsatisfactory">Неудовлетворительное</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {lawnStatusFilter !== 'all' && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setLawnStatusFilter('all')}
+                    >
+                      <Icon name="X" size={16} className="mr-2" />
+                      Сбросить
+                    </Button>
+                  )}
+                </div>
                 <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -251,14 +342,14 @@ const TablePage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lawns.length === 0 ? (
+                      {filteredLawns.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            Нет данных о газонах
+                            {lawns.length === 0 ? 'Нет данных о газонах' : 'Газоны не найдены'}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        lawns.map((lawn, index) => (
+                        filteredLawns.map((lawn, index) => (
                           <TableRow key={lawn.id}>
                             <TableCell className="font-medium">{index + 1}</TableCell>
                             <TableCell>{lawn.grassType}</TableCell>
